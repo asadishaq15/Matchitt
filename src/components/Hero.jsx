@@ -27,8 +27,8 @@ const heroStickers = [
 const Hero = () => {
   return (
     <section
-      className="relative min-h-screen overflow-hidden"
-      style={{ paddingTop: `${HERO_TOP_PADDING}px` }}
+      className="relative overflow-hidden"
+      style={{ paddingTop: `${HERO_TOP_PADDING}px`, minHeight: '165vh' }}
     >
       <div
         aria-hidden="true"
@@ -74,6 +74,61 @@ const Hero = () => {
             />
           </div>
         ))}
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '0',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1,
+          pointerEvents: 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+      >
+        <img
+          src="/middleImage.png"
+          alt=""
+          style={{
+            display: 'block',
+            width: 'min(360px, 42vw)',
+            height: 'auto',
+          }}
+        />
+        <div
+          style={{
+            margin: '-88px 0 0',
+            padding: '26px 72px 18px',
+            background: 'rgba(249, 247, 242, 0.38)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            boxShadow: '0 0 28px rgba(249, 247, 242, 0.28)',
+          }}
+        >
+          <h1
+            style={{
+              margin: 0,
+              fontFamily: '"Recoleta", Georgia, serif',
+              fontWeight: 700,
+              fontSize: 'clamp(64px, 10vw, 130px)',
+              lineHeight: 0.9,
+              color: '#7D3345',
+              textAlign: 'center',
+              letterSpacing: '0',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Strategy.
+            <br />
+            Creativity.
+            <br />
+            Execution.
+            <br />
+            Perfectly Matched.
+          </h1>
+        </div>
       </div>
       {/* Hero content removed */}
     </section>

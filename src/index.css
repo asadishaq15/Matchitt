@@ -5,6 +5,16 @@
 /* Recoleta via Bunny Fonts CDN */
 @import url('https://fonts.bunny.net/css?family=recoleta:400,500,600,700&display=swap');
 
+@font-face {
+  font-family: "Senegal";
+  src:
+    url("/senegal/Senegal.otf") format("opentype"),
+    url("/senegal/Senegal.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
   --color-cream: #F9F7F2;
   --color-cream-dark: #F2EDE4;
@@ -17,6 +27,7 @@
   --font-sans: Inter, sans-serif;
   --font-handwritten: "Dancing Script", cursive;
   --font-recoleta: "Recoleta", Georgia, serif;
+  --font-senegal: "Senegal", Georgia, serif;
 
   @keyframes float {
     0%, 100% { transform: translateY(0); }

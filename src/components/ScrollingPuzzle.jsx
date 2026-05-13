@@ -27,7 +27,7 @@ const ScrollingPuzzle = () => {
         yPercent: -50,
         x: '-5vw',
         y: '4vh',
-        scale: 0.92,
+        scale: 0.8,
         rotate: -12,
         opacity: 1,
       });
@@ -45,7 +45,7 @@ const ScrollingPuzzle = () => {
           trigger: document.body,
           start: 'top top',
           end: 'bottom bottom',
-          scrub: 0.8,
+          scrub: 0.35,
           invalidateOnRefresh: true,
         },
       });
@@ -54,44 +54,44 @@ const ScrollingPuzzle = () => {
         .to(stage, {
           x: '-28vw',
           y: '22vh',
-          scale: 0.78,
-          rotate: -16,
+          scale: 0.8,
+          rotate: -10,
           duration: 1,
         })
         .to(scrollMotion, {
-          modelScale: 0.92,
-          rotationX: 0.08,
-          rotationY: Math.PI * 0.5,
-          rotationZ: -0.08,
+          modelScale: 1,
+          rotationX: 0.04,
+          rotationY: 0.18,
+          rotationZ: -0.03,
           duration: 1,
         }, '<')
         .to(stage, {
-          x: '28vw',
-          y: '28vh',
-          scale: 0.64,
-          rotate: 10,
+          x: '-36vw',
+          y: '30vh',
+          scale: 0.8,
+          rotate: -12,
           duration: 1,
         })
         .to(scrollMotion, {
-          modelScale: 0.82,
-          rotationX: -0.08,
-          rotationY: Math.PI * 1.45,
-          rotationZ: 0.18,
+          modelScale: 1,
+          rotationX: -0.02,
+          rotationY: 0.32,
+          rotationZ: 0.04,
           duration: 1,
         }, '<')
         .to(stage, {
-          x: '0vw',
-          y: '42vh',
-          scale: 0.5,
-          rotate: 18,
-          opacity: 0.35,
+          x: '-40vw',
+          y: '40vh',
+          scale: 0.8,
+          rotate: -14,
+          opacity: 0.7,
           duration: 1,
         })
         .to(scrollMotion, {
-          modelScale: 0.72,
-          rotationX: 0.18,
-          rotationY: Math.PI * 2.1,
-          rotationZ: 0.28,
+          modelScale: 1,
+          rotationX: 0.06,
+          rotationY: 0.42,
+          rotationZ: 0.06,
           duration: 1,
         }, '<');
 
@@ -117,17 +117,17 @@ const ScrollingPuzzle = () => {
         style={{
           position: 'absolute',
           left: '55%',
-          top: '40%',
-          width: 'min(560px, 82vw)',
-          height: 'min(560px, 72vh)',
-          pointerEvents: 'auto',
+          top: '42%',
+          width: 'min(860px, 118vw)',
+          height: 'min(680px, 96vh)',
+          pointerEvents: 'none',
           touchAction: 'none',
           willChange: 'transform, opacity',
         }}
       >
         <PuzzleScene
           className="w-full h-full"
-          controlsEnabled
+          controlsEnabled={false}
           scrollMotionRef={scrollMotionRef}
         />
       </div>

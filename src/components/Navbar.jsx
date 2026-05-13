@@ -69,33 +69,37 @@ const Navbar = () => {
         <div
           style={{
             display: 'flex',
-            alignItems: 'baseline',
-            gap: '10px',
-            paddingTop: '16px',
-            paddingLeft: '28px',
+            alignItems: 'center',
+            gap: '16px',
+            paddingTop: '28px',
+            paddingLeft: '54px',
           }}
         >
           <span
             style={{
-              fontFamily: '"Recoleta", Georgia, serif',
-              fontWeight: 700,
-              fontSize: '16px',
+              fontFamily: '"Senegal", Georgia, serif',
+              fontWeight: 600,
+              fontSize: '28px',
               color: '#7D3345',
-              letterSpacing: '0.08em',
-              lineHeight: 1,
+              opacity: 0.72,
+              letterSpacing: '0.035em',
+              lineHeight: 0.86,
+              transform: 'scaleX(0.78)',
+              transformOrigin: 'left center',
+              display: 'inline-block',
             }}
           >
             MATCHITT
           </span>
           <span
             style={{
-              fontFamily: '"Recoleta", Georgia, serif',
+              fontFamily: 'Arial, Helvetica, sans-serif',
               fontWeight: 400,
-              fontSize: '10px',
+              fontSize: '15px',
               color: '#7D3345',
-              opacity: 0.75,
-              letterSpacing: '0.02em',
-              lineHeight: 1,
+              opacity: 0.72,
+              letterSpacing: '0',
+              lineHeight: 'normal',
             }}
           >
             We Match You To Your Audience

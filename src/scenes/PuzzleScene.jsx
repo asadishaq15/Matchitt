@@ -1,10 +1,11 @@
 import { Suspense, useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, PerspectiveCamera, PresentationControls, useGLTF } from '@react-three/drei';
+import { Environment, Float, PerspectiveCamera, PresentationControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
-const MODEL_TARGET_SIZE = 4.8;
-const MODEL_BASE_ROTATION = [-0.45, -2.95, -0.44];
+const MODEL_TARGET_SIZE = 4.2;
+const MODEL_BASE_ROTATION = [-0.50, -2.95, -0.44];
+const MATERIAL_COLOR_BOOST = 1.08;
 
 const seededRandom = (seed) => {
   const value = Math.sin(seed) * 10000;
@@ -37,8 +38,16 @@ const PuzzleObject = ({ modelScale = 1, rotationOffset = [0, 0, 0], scrollMotion
           material.map.needsUpdate = true;
         }
 
+        if (material.color) {
+          material.color.multiplyScalar(MATERIAL_COLOR_BOOST);
+        }
+
         if ('envMapIntensity' in material) {
-          material.envMapIntensity = 0.25;
+          material.envMapIntensity = 0.48;
+        }
+
+        if ('roughness' in material) {
+          material.roughness = Math.min(material.roughness ?? 0.5, 0.58);
         }
 
         material.needsUpdate = true;
@@ -113,6 +122,16 @@ const PuzzleScene = ({
   rotationOffset = [0, 0, 0],
   scrollMotionRef,
 }) => {
+  const puzzleContent = (
+    <Suspense fallback={null}>
+      <PuzzleObject
+        modelScale={modelScale}
+        rotationOffset={rotationOffset}
+        scrollMotionRef={scrollMotionRef}
+      />
+    </Suspense>
+  );
+
   return (
     <div className={className}>
       <Canvas
@@ -120,6 +139,9 @@ const PuzzleScene = ({
         gl={{ alpha: true, antialias: true }}
         style={{ touchAction: 'none' }}
         onCreated={({ gl, events }) => {
+          gl.outputColorSpace = THREE.SRGBColorSpace;
+          gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = 1;
           gl.domElement.style.touchAction = 'none';
           if (events.connected?.style) {
             events.connected.style.touchAction = 'none';
@@ -127,29 +149,27 @@ const PuzzleScene = ({
         }}
       >
         <PerspectiveCamera makeDefault position={[0, 0, 6.2]} fov={43} />
-        <ambientLight intensity={0.38} />
-        <hemisphereLight args={['#fff3df', '#6f7f92', 0.55]} />
-        <directionalLight position={[4, 5, 5]} intensity={1.25} color="#fff0dc" />
-        <directionalLight position={[-4, 2, 3]} intensity={0.45} color="#b9dcff" />
-        <pointLight position={[0, -2, 4]} intensity={0.35} color="#ffd1d9" />
+        <ambientLight intensity={0.24} />
+        <hemisphereLight args={['#fff0df', '#5e7188', 0.42]} />
+        <directionalLight position={[4, 5, 5]} intensity={1.78} color="#ffe6d0" />
+        <directionalLight position={[-5, 2, 3]} intensity={0.52} color="#a9d8ff" />
+        <pointLight position={[0, -2.5, 4]} intensity={0.45} color="#ffc3cf" />
+        <Environment preset="warehouse" environmentIntensity={0.42} />
         
-        <PresentationControls
-          enabled={controlsEnabled}
-          global
-          config={{ mass: 2, tension: 500 }}
-          snap={{ mass: 4, tension: 1500 }}
-          rotation={[0, 0.3, 0]}
-          polar={[-Math.PI / 3, Math.PI / 3]}
-          azimuth={[-Math.PI / 1.4, Math.PI / 1.4]}
-        >
-          <Suspense fallback={null}>
-            <PuzzleObject
-              modelScale={modelScale}
-              rotationOffset={rotationOffset}
-              scrollMotionRef={scrollMotionRef}
-            />
-          </Suspense>
-        </PresentationControls>
+        {controlsEnabled ? (
+          <PresentationControls
+            global
+            config={{ mass: 2, tension: 500 }}
+            snap={{ mass: 4, tension: 1500 }}
+            rotation={[0, 0.3, 0]}
+            polar={[-Math.PI / 3, Math.PI / 3]}
+            azimuth={[-Math.PI / 1.4, Math.PI / 1.4]}
+          >
+            {puzzleContent}
+          </PresentationControls>
+        ) : (
+          puzzleContent
+        )}
         
         {/* Particle system for depth */}
         <Particles count={50} />
