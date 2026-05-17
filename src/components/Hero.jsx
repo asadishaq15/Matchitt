@@ -27,6 +27,7 @@ const heroStickers = [
 const Hero = () => {
   return (
     <section
+      id="hero"
       className="relative overflow-hidden"
       style={{ paddingTop: `${HERO_TOP_PADDING}px`, minHeight: '165vh' }}
     >
@@ -101,10 +102,10 @@ const Hero = () => {
           style={{
             margin: '-88px 0 0',
             padding: '26px 72px 18px',
-            background: 'rgba(249, 247, 242, 0.38)',
+            background: 'rgba(245, 245, 245, 0.38)',
             backdropFilter: 'blur(4px)',
             WebkitBackdropFilter: 'blur(4px)',
-            boxShadow: '0 0 28px rgba(249, 247, 242, 0.28)',
+            boxShadow: '0 0 28px rgba(245, 245, 245, 0.28)',
           }}
         >
           <h1

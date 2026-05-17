@@ -2,6 +2,9 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import PuzzleScene from '../scenes/PuzzleScene';
+import { usePuzzleJoinScroll } from '../hooks/usePuzzleJoinScroll';
+import { HERO_PUZZLE_MOTION } from '../constants/puzzleJoin';
+import { onScrollReady, SCROLL_ROOT } from '../lib/scrollEngine';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -13,92 +16,128 @@ const ScrollingPuzzle = () => {
     rotationX: 0,
     rotationY: 0,
     rotationZ: 0,
+    joinProgress: 1,
+    separatedCorners: false,
   });
+
+  usePuzzleJoinScroll({ scrollMotionRef, stageRef, overlayRef });
 
   useEffect(() => {
     const stage = stageRef.current;
     if (!stage) return undefined;
 
-    const ctx = gsap.context(() => {
-      const scrollMotion = scrollMotionRef.current;
+    let ctx;
+    let disposed = false;
 
-      gsap.set(stage, {
-        xPercent: -50,
-        yPercent: -50,
-        x: '-5vw',
-        y: '4vh',
-        scale: 0.8,
-        rotate: -12,
-        opacity: 1,
-      });
+    const setup = () => {
+      if (disposed || !stageRef.current) return;
 
-      gsap.set(scrollMotion, {
-        modelScale: 1,
-        rotationX: 0,
-        rotationY: 0,
-        rotationZ: 0,
-      });
+      ctx = gsap.context(() => {
+        const scrollMotion = scrollMotionRef.current;
 
-      const timeline = gsap.timeline({
-        defaults: { ease: 'none' },
-        scrollTrigger: {
-          trigger: document.body,
-          start: 'top top',
-          end: 'bottom bottom',
-          scrub: 0.35,
-          invalidateOnRefresh: true,
-        },
-      });
-
-      timeline
-        .to(stage, {
-          x: '-28vw',
-          y: '22vh',
-          scale: 0.8,
-          rotate: -10,
-          duration: 1,
-        })
-        .to(scrollMotion, {
-          modelScale: 1,
-          rotationX: 0.04,
-          rotationY: 0.18,
-          rotationZ: -0.03,
-          duration: 1,
-        }, '<')
-        .to(stage, {
-          x: '-36vw',
-          y: '30vh',
+        gsap.set(stage, {
+          xPercent: -50,
+          yPercent: -50,
+          x: '-5vw',
+          y: '4vh',
           scale: 0.8,
           rotate: -12,
-          duration: 1,
-        })
-        .to(scrollMotion, {
-          modelScale: 1,
-          rotationX: -0.02,
-          rotationY: 0.32,
-          rotationZ: 0.04,
-          duration: 1,
-        }, '<')
-        .to(stage, {
-          x: '-40vw',
-          y: '40vh',
-          scale: 0.8,
-          rotate: -14,
-          opacity: 0.7,
-          duration: 1,
-        })
-        .to(scrollMotion, {
-          modelScale: 1,
-          rotationX: 0.06,
-          rotationY: 0.42,
-          rotationZ: 0.06,
-          duration: 1,
-        }, '<');
+          opacity: 1,
+        });
 
-      ScrollTrigger.refresh();
-    }, overlayRef);
+        gsap.set(scrollMotion, HERO_PUZZLE_MOTION);
 
-    return () => ctx.revert();
+        const heroEl = document.getElementById('hero');
+        const applyHeroJoinedState = () => {
+          Object.assign(scrollMotion, HERO_PUZZLE_MOTION);
+        };
+
+        const scrollTriggerConfig = {
+          scroller: SCROLL_ROOT,
+          trigger: heroEl ?? document.body,
+          start: 'top top',
+          end: heroEl ? 'bottom bottom' : 'bottom bottom',
+          scrub: 0.35,
+          invalidateOnRefresh: true,
+          onEnter: applyHeroJoinedState,
+          onEnterBack: applyHeroJoinedState,
+        };
+
+        const timeline = gsap.timeline({
+          defaults: { ease: 'none' },
+          scrollTrigger: scrollTriggerConfig,
+        });
+
+        timeline.set(scrollMotion, HERO_PUZZLE_MOTION, 0);
+
+        timeline
+          .to(stage, {
+            x: '-28vw',
+            y: '22vh',
+            scale: 0.8,
+            rotate: -10,
+            duration: 1,
+          })
+          .to(scrollMotion, {
+            modelScale: 1,
+            rotationX: 0.04,
+            rotationY: 0.18,
+            rotationZ: -0.03,
+            duration: 1,
+          }, '<')
+          .to(stage, {
+            x: '-36vw',
+            y: '30vh',
+            scale: 0.8,
+            rotate: -12,
+            duration: 1,
+          })
+          .to(scrollMotion, {
+            modelScale: 1,
+            rotationX: -0.02,
+            rotationY: 0.32,
+            rotationZ: 0.04,
+            duration: 1,
+          }, '<')
+          .to(stage, {
+            x: '-40vw',
+            y: '40vh',
+            scale: 0.8,
+            rotate: -14,
+            opacity: 0.7,
+            duration: 1,
+          })
+          .to(scrollMotion, {
+            modelScale: 1,
+            rotationX: 0.06,
+            rotationY: 0.42,
+            rotationZ: 0.06,
+            duration: 1,
+          }, '<')
+          .to(stage, {
+            opacity: 0,
+            duration: 0.2,
+            ease: 'power2.in',
+          });
+
+        const overlay = overlayRef.current;
+        if (overlay) {
+          gsap.set(overlay, { opacity: 1 });
+        }
+
+        requestAnimationFrame(() => {
+          ScrollTrigger.refresh();
+        });
+      }, overlayRef);
+    };
+
+    const unsub = onScrollReady(setup);
+
+    return () => {
+      disposed = true;
+      unsub();
+      ctx?.revert();
+    };
   }, []);
 
   return (
@@ -108,7 +147,7 @@ const ScrollingPuzzle = () => {
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 20,
+        zIndex: 18,
         pointerEvents: 'none',
       }}
     >
@@ -116,10 +155,11 @@ const ScrollingPuzzle = () => {
         ref={stageRef}
         style={{
           position: 'absolute',
-          left: '55%',
-          top: '42%',
-          width: 'min(860px, 118vw)',
-          height: 'min(680px, 96vh)',
+          left: '50%',
+          top: '50%',
+          width: '100vw',
+          height: '100vh',
+          opacity: 0,
           pointerEvents: 'none',
           touchAction: 'none',
           willChange: 'transform, opacity',

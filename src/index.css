@@ -16,8 +16,8 @@
 }
 
 @theme {
-  --color-cream: #F9F7F2;
-  --color-cream-dark: #F2EDE4;
+  --color-cream: #F5F5F5;
+  --color-cream-dark: #F0F0F0;
   --color-burgundy: #800020;
   --color-burgundy-light: #A52A2A;
   --color-accent-blue: #A5D8FF;
@@ -39,6 +39,10 @@
 }
 
 @layer base {
+  html {
+    background-color: var(--color-cream);
+  }
+
   body {
     background-color: var(--color-cream);
     color: #1a1a1a;

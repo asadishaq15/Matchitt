@@ -1,9 +1,24 @@
 import { Suspense, useMemo, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Environment, Float, PerspectiveCamera, PresentationControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import {
+  NULL_ROOT_NAME,
+  PIECE_NAMES,
+  SEPARATED_ALIGN_Y,
+  SEPARATED_ALIGN_Z,
+  CAMERA_FOV_JOINED,
+  CAMERA_FOV_SEPARATED,
+  CAMERA_Z_JOINED,
+  CAMERA_Z_SEPARATED,
+  SEPARATED_GROUP_ROTATION,
+  SEPARATED_ROTATION,
+  SEPARATION_EXTRA,
+  SEPARATION_GAP_FACTOR,
+  CORNER_PIECE_OFFSET,
+} from '../constants/puzzleJoin';
 
-const MODEL_TARGET_SIZE = 4.2;
+const MODEL_TARGET_SIZE = 4.6;
 const MODEL_BASE_ROTATION = [-0.50, -2.95, -0.44];
 const MATERIAL_COLOR_BOOST = 1.08;
 
@@ -11,6 +26,24 @@ const seededRandom = (seed) => {
   const value = Math.sin(seed) * 10000;
   return value - Math.floor(value);
 };
+
+const findPuzzlePieces = (root) => {
+  const nullRoot = root.getObjectByName(NULL_ROOT_NAME) ?? root;
+  const left =
+    nullRoot.getObjectByName(PIECE_NAMES.left) ??
+    root.getObjectByName(PIECE_NAMES.left);
+  const right =
+    nullRoot.getObjectByName(PIECE_NAMES.right) ??
+    root.getObjectByName(PIECE_NAMES.right);
+
+  return { left, right, nullRoot };
+};
+
+const capturePiece = (object) => ({
+  object,
+  restPosition: object.position.clone(),
+  restRotation: object.rotation.clone(),
+});
 
 const PuzzleObject = ({ modelScale = 1, rotationOffset = [0, 0, 0], scrollMotionRef }) => {
   const groupRef = useRef();
@@ -66,10 +99,23 @@ const PuzzleObject = ({ modelScale = 1, rotationOffset = [0, 0, 0], scrollMotion
     const maxAxis = Math.max(size.x, size.y, size.z) || 1;
     const scale = MODEL_TARGET_SIZE / maxAxis;
 
+    const { left: leftObject, right: rightObject } = findPuzzlePieces(clonedScene);
+
+    let separationX = SEPARATION_EXTRA;
+    if (leftObject && rightObject) {
+      const restGap = Math.abs(leftObject.position.x - rightObject.position.x);
+      separationX = SEPARATION_EXTRA + restGap * SEPARATION_GAP_FACTOR;
+    }
+
     return {
       scene: clonedScene,
       scale,
       position: [-center.x * scale, -center.y * scale, -center.z * scale],
+      pieces: {
+        left: leftObject ? capturePiece(leftObject) : null,
+        right: rightObject ? capturePiece(rightObject) : null,
+        separationX,
+      },
     };
   }, [scene]);
 
@@ -80,39 +126,93 @@ const PuzzleObject = ({ modelScale = 1, rotationOffset = [0, 0, 0], scrollMotion
     const scrollRotationY = scrollMotion?.rotationY ?? 0;
     const scrollRotationZ = scrollMotion?.rotationZ ?? 0;
 
+    const joinProgress = scrollMotion?.joinProgress ?? 1;
+    const spreadT = 1 - joinProgress;
+    const useCornerOffsets = Boolean(scrollMotion?.separatedCorners && spreadT > 0);
+
     if (groupRef.current) {
+      const baseX = THREE.MathUtils.lerp(MODEL_BASE_ROTATION[0], SEPARATED_GROUP_ROTATION[0], spreadT);
+      const baseY = THREE.MathUtils.lerp(MODEL_BASE_ROTATION[1], SEPARATED_GROUP_ROTATION[1], spreadT);
+      const baseZ = THREE.MathUtils.lerp(MODEL_BASE_ROTATION[2], SEPARATED_GROUP_ROTATION[2], spreadT);
       groupRef.current.rotation.set(
-        MODEL_BASE_ROTATION[0] + rotationOffset[0] + scrollRotationX,
-        MODEL_BASE_ROTATION[1] + rotationOffset[1] + scrollRotationY,
-        MODEL_BASE_ROTATION[2] + rotationOffset[2] + scrollRotationZ
+        baseX + rotationOffset[0] + scrollRotationX,
+        baseY + rotationOffset[1] + scrollRotationY,
+        baseZ + rotationOffset[2] + scrollRotationZ,
       );
     }
 
     if (normalizedModelRef.current) {
       normalizedModelRef.current.scale.setScalar(model.scale * modelScale * scrollScale);
     }
+    const spread = model.pieces.separationX * spreadT;
+
+    const applyPieceTransform = (piece, side) => {
+      if (!piece) return;
+      const { object, restPosition, restRotation } = piece;
+      const rot = SEPARATED_ROTATION[side];
+      const sign = side === 'left' ? -1 : 1;
+
+      object.position.x = restPosition.x + sign * spread;
+      object.position.y = THREE.MathUtils.lerp(restPosition.y, SEPARATED_ALIGN_Y, spreadT);
+      object.position.z = THREE.MathUtils.lerp(restPosition.z, SEPARATED_ALIGN_Z, spreadT);
+
+      if (useCornerOffsets) {
+        const corner = CORNER_PIECE_OFFSET[side];
+        object.position.x += corner.x * spreadT;
+        object.position.y += corner.y * spreadT;
+        object.position.z += corner.z * spreadT;
+      }
+
+      object.rotation.x = restRotation.x + rot.x * spreadT;
+      object.rotation.y = restRotation.y + rot.y * spreadT;
+      object.rotation.z = restRotation.z + rot.z * spreadT;
+    };
+
+    applyPieceTransform(model.pieces.left, 'left');
+    applyPieceTransform(model.pieces.right, 'right');
   });
 
-  return (
-    <Float
-      speed={1.1}
-      rotationIntensity={0.18}
-      floatIntensity={0.55}
+  const modelGroup = (
+    <group
+      ref={groupRef}
+      rotation={[
+        MODEL_BASE_ROTATION[0] + rotationOffset[0],
+        MODEL_BASE_ROTATION[1] + rotationOffset[1],
+        MODEL_BASE_ROTATION[2] + rotationOffset[2],
+      ]}
     >
-      <group
-        ref={groupRef}
-        rotation={[
-          MODEL_BASE_ROTATION[0] + rotationOffset[0],
-          MODEL_BASE_ROTATION[1] + rotationOffset[1],
-          MODEL_BASE_ROTATION[2] + rotationOffset[2],
-        ]}
-      >
-        <group ref={normalizedModelRef} scale={model.scale * modelScale} position={model.position}>
-          <primitive object={model.scene} />
-        </group>
+      <group ref={normalizedModelRef} scale={model.scale * modelScale} position={model.position}>
+        <primitive object={model.scene} />
       </group>
+    </group>
+  );
+
+  if (scrollMotionRef) {
+    return modelGroup;
+  }
+
+  return (
+    <Float speed={1.1} rotationIntensity={0.18} floatIntensity={0.55}>
+      {modelGroup}
     </Float>
   );
+};
+
+const FitSeparatedCamera = ({ scrollMotionRef }) => {
+  const camera = useThree((state) => state.camera);
+
+  useFrame(() => {
+    if (!(camera instanceof THREE.PerspectiveCamera)) return;
+
+    const joinProgress = scrollMotionRef?.current?.joinProgress ?? 1;
+    const spreadT = 1 - joinProgress;
+
+    camera.position.z = THREE.MathUtils.lerp(CAMERA_Z_JOINED, CAMERA_Z_SEPARATED, spreadT);
+    camera.fov = THREE.MathUtils.lerp(CAMERA_FOV_JOINED, CAMERA_FOV_SEPARATED, spreadT);
+    camera.updateProjectionMatrix();
+  });
+
+  return <PerspectiveCamera makeDefault position={[0, 0, CAMERA_Z_JOINED]} fov={CAMERA_FOV_JOINED} />;
 };
 
 const PuzzleScene = ({
@@ -148,7 +248,11 @@ const PuzzleScene = ({
           }
         }}
       >
-        <PerspectiveCamera makeDefault position={[0, 0, 6.2]} fov={43} />
+        {scrollMotionRef ? (
+          <FitSeparatedCamera scrollMotionRef={scrollMotionRef} />
+        ) : (
+          <PerspectiveCamera makeDefault position={[0, 0, CAMERA_Z_JOINED]} fov={CAMERA_FOV_JOINED} />
+        )}
         <ambientLight intensity={0.24} />
         <hemisphereLight args={['#fff0df', '#5e7188', 0.42]} />
         <directionalLight position={[4, 5, 5]} intensity={1.78} color="#ffe6d0" />

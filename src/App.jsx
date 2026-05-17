@@ -1,6 +1,12 @@
 import { useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
+import AboutUs from './components/AboutUs';
+import WhatWeDo from './components/WhatWeDo';
+import HowWeMatch from './components/HowWeMatch';
+import PuzzleJoinSection from './components/PuzzleJoinSection';
+import MatchStepsRow from './components/MatchStepsRow';
+import WhoWeWorkWith from './components/WhoWeWorkWith';
 import ScrollingPuzzle from './components/ScrollingPuzzle';
 import { useSmoothScroll } from './hooks/useSmoothScroll';
 import gsap from 'gsap';
@@ -37,8 +43,14 @@ function App() {
       <Navbar />
       <ScrollingPuzzle />
       
-      <main>
+      <main className="relative z-[40] isolate">
         <Hero />
+        <AboutUs />
+        <WhatWeDo />
+        <HowWeMatch />
+        <PuzzleJoinSection />
+        <MatchStepsRow />
+        <WhoWeWorkWith />
       </main>
     </div>
   );

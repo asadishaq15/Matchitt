@@ -22,6 +22,8 @@ const navItems = [
 // Total navbar height to match the blue cover band in the design
 const NAVBAR_HEIGHT = 310;
 const NAV_CONTENT_HEIGHT = 200;
+const BLUE_OVERLAY_WIDTH = '165%';
+const BLUE_OVERLAY_HEIGHT = '200%';
 
 const Navbar = () => {
   const [hovered, setHovered] = useState(null);
@@ -31,21 +33,45 @@ const Navbar = () => {
       className="relative w-full z-50"
       style={{ height: `${NAVBAR_HEIGHT}px` }}
     >
-      {/* Full-height background cover image */}
-      <img
-        src="/navbarcover.png"
-        alt=""
+      {/* Clip expanded overlay to the same bounds as navbarcover */}
+      <div
         aria-hidden="true"
         style={{
           position: 'absolute',
           inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          objectPosition: 'top center',
+          overflow: 'hidden',
           zIndex: 0,
         }}
-      />
+      >
+        <img
+          src="/navbarcover.png"
+          alt=""
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'top center',
+          }}
+        />
+
+        <img
+          src="/Blueoverlay.png"
+          alt=""
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '-12%',
+            width: BLUE_OVERLAY_WIDTH,
+            height: BLUE_OVERLAY_HEIGHT,
+            transform: 'translateX(-50%)',
+            objectFit: 'cover',
+            objectPosition: 'top center',
+            pointerEvents: 'none',
+          }}
+        />
+      </div>
 
       <img
         src="/brandName.svg"
@@ -57,13 +83,13 @@ const Navbar = () => {
           width: '240px',
           height: 'auto',
           transform: 'translateX(-50%)',
-          zIndex: 1,
+          zIndex: 2,
           pointerEvents: 'none',
         }}
       />
 
       {/* All content sits above the cover */}
-      <div style={{ position: 'relative', zIndex: 2, height: `${NAV_CONTENT_HEIGHT}px`, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'relative', zIndex: 3, height: `${NAV_CONTENT_HEIGHT}px`, display: 'flex', flexDirection: 'column' }}>
 
         {/* Top row: Logo + Tagline inline, top-left */}
         <div
