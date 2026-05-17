@@ -3,7 +3,11 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import PuzzleScene from '../scenes/PuzzleScene';
 import { usePuzzleJoinScroll } from '../hooks/usePuzzleJoinScroll';
-import { HERO_PUZZLE_MOTION } from '../constants/puzzleJoin';
+import {
+  HERO_PUZZLE_MOTION,
+  HERO_STAGE_INITIAL,
+  HERO_STAGE_SCALE,
+} from '../constants/puzzleJoin';
 import { onScrollReady, SCROLL_ROOT } from '../lib/scrollEngine';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -12,12 +16,8 @@ const ScrollingPuzzle = () => {
   const overlayRef = useRef(null);
   const stageRef = useRef(null);
   const scrollMotionRef = useRef({
+    ...HERO_PUZZLE_MOTION,
     modelScale: 1,
-    rotationX: 0,
-    rotationY: 0,
-    rotationZ: 0,
-    joinProgress: 1,
-    separatedCorners: false,
   });
 
   usePuzzleJoinScroll({ scrollMotionRef, stageRef, overlayRef });
@@ -38,11 +38,8 @@ const ScrollingPuzzle = () => {
         gsap.set(stage, {
           xPercent: -50,
           yPercent: -50,
-          x: '-5vw',
-          y: '4vh',
-          scale: 0.8,
-          rotate: -12,
           opacity: 1,
+          ...HERO_STAGE_INITIAL,
         });
 
         gsap.set(scrollMotion, HERO_PUZZLE_MOTION);
@@ -72,46 +69,46 @@ const ScrollingPuzzle = () => {
 
         timeline
           .to(stage, {
-            x: '-28vw',
+            x: '28vw',
             y: '22vh',
-            scale: 0.8,
-            rotate: -10,
+            scale: HERO_STAGE_SCALE,
+            rotate: 10,
             duration: 1,
           })
           .to(scrollMotion, {
             modelScale: 1,
             rotationX: 0.04,
-            rotationY: 0.18,
-            rotationZ: -0.03,
+            rotationY: -0.18,
+            rotationZ: 0.03,
             duration: 1,
           }, '<')
           .to(stage, {
-            x: '-36vw',
+            x: '36vw',
             y: '30vh',
-            scale: 0.8,
-            rotate: -12,
+            scale: HERO_STAGE_SCALE,
+            rotate: 12,
             duration: 1,
           })
           .to(scrollMotion, {
             modelScale: 1,
             rotationX: -0.02,
-            rotationY: 0.32,
-            rotationZ: 0.04,
+            rotationY: -0.32,
+            rotationZ: -0.04,
             duration: 1,
           }, '<')
           .to(stage, {
-            x: '-40vw',
+            x: '40vw',
             y: '40vh',
-            scale: 0.8,
-            rotate: -14,
+            scale: HERO_STAGE_SCALE,
+            rotate: 14,
             opacity: 0.7,
             duration: 1,
           })
           .to(scrollMotion, {
             modelScale: 1,
             rotationX: 0.06,
-            rotationY: 0.42,
-            rotationZ: 0.06,
+            rotationY: -0.42,
+            rotationZ: -0.06,
             duration: 1,
           }, '<')
           .to(stage, {

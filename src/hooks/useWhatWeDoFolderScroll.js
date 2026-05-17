@@ -13,12 +13,14 @@ const scrollTriggerBase = {
 const DESKTOP_MQ = '(min-width: 769px) and (prefers-reduced-motion: no-preference)';
 const FALLBACK_MQ = '(max-width: 768px), (prefers-reduced-motion: reduce)';
 
-const SCROLL_VH_PER_CARD = 0.26;
-const CARD_STAGGER = 1.35;
-const CARD_ENTER_DURATION = 1.1;
-const SCRUB_SMOOTHNESS = 1.15;
-const ENTER_Y = 56;
-const END_HOLD_DURATION = 0.4;
+const SCROLL_VH_PER_CARD = 0.4;
+const CARD_STAGGER = 1.65;
+const CARD_ENTER_DURATION = 1.7;
+const SCRUB_SMOOTHNESS = 1.75;
+/** Diagonal entry offset (bottom-right → resting position). */
+const ENTER_X = 100;
+const ENTER_Y = 72;
+const END_HOLD_DURATION = 0.55;
 
 const waitForImages = (container) => {
   const images = container.querySelectorAll('img');
@@ -65,7 +67,7 @@ export const useWhatWeDoFolderScroll = ({
         mm = gsap.matchMedia();
 
         mm.add(FALLBACK_MQ, () => {
-          gsap.set(cards, { autoAlpha: 1, y: 0, clearProps: 'transform' });
+          gsap.set(cards, { autoAlpha: 1, x: 0, y: 0, clearProps: 'transform' });
           if (headerRef?.current) {
             gsap.set(headerRef.current, {
               autoAlpha: 1,
@@ -91,7 +93,7 @@ export const useWhatWeDoFolderScroll = ({
             });
           }
 
-          gsap.set(cards, { autoAlpha: 0, y: ENTER_Y });
+          gsap.set(cards, { autoAlpha: 0, x: ENTER_X, y: ENTER_Y });
 
           const tl = gsap.timeline({
             scrollTrigger: {
@@ -112,6 +114,7 @@ export const useWhatWeDoFolderScroll = ({
               card,
               {
                 autoAlpha: 1,
+                x: 0,
                 y: 0,
                 duration: CARD_ENTER_DURATION,
                 ease: 'power3.out',

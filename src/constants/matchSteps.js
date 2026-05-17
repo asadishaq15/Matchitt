@@ -33,3 +33,9 @@ export const MATCH_STEPS = [
     puzzleRotate: -12,
   },
 ];
+
+/** Eight slides for scroll-driven carousel scrub (second set mirrors first). */
+export const MATCH_STEPS_SCRUB = [
+  ...MATCH_STEPS,
+  ...MATCH_STEPS.map((step) => ({ ...step, id: step.id + 4 })),
+];

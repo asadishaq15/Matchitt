@@ -1,6 +1,10 @@
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import {
+  applyAboutPuzzleMotion,
+  resetAboutPuzzleMotion,
+} from '../constants/aboutUsPuzzle';
 import { onScrollReady, SCROLL_ROOT } from '../lib/scrollEngine';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -13,8 +17,9 @@ const scrollTriggerBase = {
 const DESKTOP_MQ = '(min-width: 769px) and (prefers-reduced-motion: no-preference)';
 const FALLBACK_MQ = '(max-width: 768px), (prefers-reduced-motion: reduce)';
 
-const SCRUB_SMOOTHNESS = 1.35;
-const END_BUFFER_VH = 0.15;
+const SCRUB_SMOOTHNESS = 2.2;
+const END_BUFFER_VH = 0.05;
+const RESIZE_DEBOUNCE_MS = 150;
 
 const waitForImages = (container) => {
   const images = container.querySelectorAll('img');
@@ -51,36 +56,61 @@ const getScrollDistance = (copyTrack, copyViewport) => {
   return Math.max(overflow, 0) + window.innerHeight * END_BUFFER_VH;
 };
 
-const syncChapterHeights = (copyViewport, copyTrack) => {
-  const step = copyViewport.clientHeight;
+const getStageHeight = (pin, copyViewport) => {
+  const pinHeight = pin?.clientHeight ?? 0;
+  const viewportHeight = copyViewport?.clientHeight ?? 0;
+  return Math.max(pinHeight, viewportHeight, window.innerHeight) || window.innerHeight;
+};
+
+const syncChapterHeights = (pin, copyViewport, copyTrack) => {
+  const step = getStageHeight(pin, copyViewport);
   if (step <= 0) return;
 
   copyTrack.querySelectorAll('.about-us__chapter').forEach((chapter) => {
     chapter.style.minHeight = `${step}px`;
+    chapter.style.height = `${step}px`;
   });
 };
 
 const clearChapterHeights = (copyTrack) => {
   copyTrack.querySelectorAll('.about-us__chapter').forEach((chapter) => {
     chapter.style.minHeight = '';
+    chapter.style.height = '';
   });
 };
 
-const updateChapterFocus = (copyViewport, copyTrack) => {
+const measureScrollMetrics = (pin, copyViewport, copyTrack) => {
+  syncChapterHeights(pin, copyViewport, copyTrack);
+  const maxY = Math.max(getCopyOverflow(copyTrack, copyViewport), 0);
+  const scrollDistance = getScrollDistance(copyTrack, copyViewport);
+  return { maxY, scrollDistance };
+};
+
+const setChapterFocus = (copyTrack, progress) => {
   const chapters = copyTrack.querySelectorAll('.about-us__chapter');
-  if (!chapters.length) return;
+  const n = chapters.length;
+  if (!n) return;
 
-  const viewportRect = copyViewport.getBoundingClientRect();
-  const viewportCenter = viewportRect.top + viewportRect.height * 0.5;
-  const falloff = viewportRect.height * 0.65;
+  const active = gsap.utils.clamp(0, n - 1, Math.round(progress * (n - 1)));
 
-  chapters.forEach((chapter) => {
-    const rect = chapter.getBoundingClientRect();
-    const chapterCenter = rect.top + rect.height * 0.5;
-    const dist = Math.abs(chapterCenter - viewportCenter);
-    const opacity = gsap.utils.clamp(0.32, 1, 1 - dist / falloff);
-    gsap.set(chapter, { opacity });
+  chapters.forEach((chapter, i) => {
+    gsap.set(chapter, { opacity: i === active ? 1 : 0.5 });
   });
+};
+
+const applyScrollProgress = (copyTrack, progress, maxY) => {
+  gsap.set(copyTrack, {
+    y: progress * -maxY,
+    force3D: true,
+  });
+};
+
+const debounce = (fn, ms) => {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), ms);
+  };
 };
 
 export const useAboutUsTextScroll = ({
@@ -88,6 +118,7 @@ export const useAboutUsTextScroll = ({
   pinRef,
   copyViewportRef,
   copyTrackRef,
+  puzzleMotionRef,
 }) => {
   useGSAP(
     () => {
@@ -116,46 +147,65 @@ export const useAboutUsTextScroll = ({
         });
 
         mm.add(DESKTOP_MQ, () => {
-          syncChapterHeights(copyViewport, copyTrack);
-          gsap.set(copyTrack, { y: 0 });
+          let cachedMaxY = 0;
+          let cachedScrollDistance = 0;
 
-          const measureOverflow = () => getCopyOverflow(copyTrack, copyViewport);
-          const scrollY = () => -Math.max(measureOverflow(), 0);
+          const recomputeMetrics = () => {
+            const metrics = measureScrollMetrics(pin, copyViewport, copyTrack);
+            cachedMaxY = metrics.maxY;
+            cachedScrollDistance = metrics.scrollDistance;
+            return metrics;
+          };
 
-          if (measureOverflow() > 0) {
-            gsap.set(copyTrack.querySelectorAll('.about-us__chapter'), { opacity: 0.32 });
+          const resetToStart = () => {
+            gsap.set(copyTrack, { y: 0, force3D: true });
+            setChapterFocus(copyTrack, 0);
+            resetAboutPuzzleMotion(puzzleMotionRef);
+          };
 
-            gsap.timeline({
-              scrollTrigger: {
-                ...scrollTriggerBase,
-                trigger: pin,
-                start: 'top top',
-                end: () => `+=${getScrollDistance(copyTrack, copyViewport)}`,
-                pin: true,
-                pinSpacing: true,
-                scrub: SCRUB_SMOOTHNESS,
-                anticipatePin: 1,
-                fastScrollEnd: true,
-                onUpdate: () => updateChapterFocus(copyViewport, copyTrack),
+          const clampToEnd = () => {
+            applyScrollProgress(copyTrack, 1, cachedMaxY);
+            setChapterFocus(copyTrack, 1);
+            applyAboutPuzzleMotion(puzzleMotionRef, 1);
+          };
+
+          const { maxY } = recomputeMetrics();
+          resetToStart();
+
+          if (maxY > 0) {
+            ScrollTrigger.create({
+              ...scrollTriggerBase,
+              id: 'about-us-scroll',
+              trigger: pin,
+              start: 'top top',
+              end: () => `+=${cachedScrollDistance}`,
+              pin: true,
+              pinSpacing: true,
+              scrub: SCRUB_SMOOTHNESS,
+              anticipatePin: 0,
+              onEnter: resetToStart,
+              onEnterBack: resetToStart,
+              onLeave: clampToEnd,
+              onLeaveBack: resetToStart,
+              onUpdate: (self) => {
+                applyScrollProgress(copyTrack, self.progress, cachedMaxY);
+                setChapterFocus(copyTrack, self.progress);
+                applyAboutPuzzleMotion(puzzleMotionRef, self.progress);
               },
-            }).to(copyTrack, {
-              y: scrollY,
-              ease: 'none',
-              force3D: true,
             });
-
-            updateChapterFocus(copyViewport, copyTrack);
           } else {
             gsap.set(copyTrack.querySelectorAll('.about-us__chapter'), { opacity: 1 });
           }
 
-          const refreshAfterLayout = () => {
-            syncChapterHeights(copyViewport, copyTrack);
+          const refreshAfterLayout = debounce(() => {
+            recomputeMetrics();
             requestAnimationFrame(() => ScrollTrigger.refresh());
-          };
+          }, RESIZE_DEBOUNCE_MS);
 
-          waitForImages(section).then(refreshAfterLayout);
-          refreshAfterLayout();
+          waitForImages(section).then(() => {
+            recomputeMetrics();
+            requestAnimationFrame(() => ScrollTrigger.refresh());
+          });
 
           window.addEventListener('resize', refreshAfterLayout);
           return () => window.removeEventListener('resize', refreshAfterLayout);

@@ -221,7 +221,12 @@ const PuzzleScene = ({
   modelScale = 1,
   rotationOffset = [0, 0, 0],
   scrollMotionRef,
+  showParticles = true,
+  dimmed = false,
 }) => {
+  const toneMappingExposure = dimmed ? 0.55 : 1;
+  const environmentIntensity = dimmed ? 0.22 : 0.42;
+  const ambientIntensity = dimmed ? 0.16 : 0.24;
   const puzzleContent = (
     <Suspense fallback={null}>
       <PuzzleObject
@@ -241,7 +246,7 @@ const PuzzleScene = ({
         onCreated={({ gl, events }) => {
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1;
+          gl.toneMappingExposure = toneMappingExposure;
           gl.domElement.style.touchAction = 'none';
           if (events.connected?.style) {
             events.connected.style.touchAction = 'none';
@@ -253,12 +258,12 @@ const PuzzleScene = ({
         ) : (
           <PerspectiveCamera makeDefault position={[0, 0, CAMERA_Z_JOINED]} fov={CAMERA_FOV_JOINED} />
         )}
-        <ambientLight intensity={0.24} />
-        <hemisphereLight args={['#fff0df', '#5e7188', 0.42]} />
-        <directionalLight position={[4, 5, 5]} intensity={1.78} color="#ffe6d0" />
-        <directionalLight position={[-5, 2, 3]} intensity={0.52} color="#a9d8ff" />
-        <pointLight position={[0, -2.5, 4]} intensity={0.45} color="#ffc3cf" />
-        <Environment preset="warehouse" environmentIntensity={0.42} />
+        <ambientLight intensity={ambientIntensity} />
+        <hemisphereLight args={['#fff0df', '#5e7188', dimmed ? 0.28 : 0.42]} />
+        <directionalLight position={[4, 5, 5]} intensity={dimmed ? 1.1 : 1.78} color="#ffe6d0" />
+        <directionalLight position={[-5, 2, 3]} intensity={dimmed ? 0.32 : 0.52} color="#a9d8ff" />
+        <pointLight position={[0, -2.5, 4]} intensity={dimmed ? 0.28 : 0.45} color="#ffc3cf" />
+        <Environment preset="warehouse" environmentIntensity={environmentIntensity} />
         
         {controlsEnabled ? (
           <PresentationControls
@@ -275,8 +280,7 @@ const PuzzleScene = ({
           puzzleContent
         )}
         
-        {/* Particle system for depth */}
-        <Particles count={50} />
+        {showParticles ? <Particles count={50} /> : null}
       </Canvas>
     </div>
   );

@@ -1,4 +1,6 @@
 import { useRef } from 'react';
+import { ABOUT_PUZZLE_MOTION_INITIAL } from '../constants/aboutUsPuzzle';
+import AboutUsPuzzleBackground from './AboutUsPuzzleBackground';
 import { useAboutUsTextScroll } from '../hooks/useAboutUsTextScroll';
 
 const TITLE_SRC = '/AboutUs/AboutUsTitle.png';
@@ -10,36 +12,40 @@ const ABOUT_CHAPTERS = [
   {
     id: 'noise',
     heading: 'THE NOISE',
-    body: 'Too much content, too many trends—most brands need direction, not volume.',
+    body: 'There\'s too much content online, too many trends to chase, and too many agencies selling volume instead of clarity. Most businesses don\'t need more posts—they need the right direction toward the audience that will actually listen.',
   },
   {
     id: 'belief',
     heading: 'OUR BELIEF',
-    body: 'Matchitt started on one idea: say less, mean more, reach the people who matter.',
+    body: 'We started Matchitt with one simple belief: say less, mean more, and reach the people who matter. When your message is clear, every piece of creative, content, and media works harder for you.',
   },
   {
     id: 'match',
     heading: 'HOW WE MATCH',
-    body: 'Strategy first, then creative, content, and paid—all aligned to one clear message.',
+    body: 'Strategy comes first. Then creative, content, and paid amplification—all built around one consistent voice and one clear plan. We match your brand story to the audiences ready to hear it, through the channels that fit.',
   },
   {
     id: 'results',
     heading: 'WHAT YOU GET',
-    body: 'No generic playbooks. Measurable work that connects you to your audience.',
+    body: 'No generic playbooks and no vanity metrics. You get measurable work that connects—and a partner focused on matching you with your audience through strategy, content, and execution that lasts.',
   },
 ];
+
+const SIDE_INSET = 'clamp(24px, 6vw, 96px)';
 
 const AboutUs = () => {
   const sectionRef = useRef(null);
   const pinRef = useRef(null);
   const copyViewportRef = useRef(null);
   const copyTrackRef = useRef(null);
+  const aboutPuzzleMotionRef = useRef({ ...ABOUT_PUZZLE_MOTION_INITIAL });
 
   useAboutUsTextScroll({
     sectionRef,
     pinRef,
     copyViewportRef,
     copyTrackRef,
+    puzzleMotionRef: aboutPuzzleMotionRef,
   });
 
   return (
@@ -52,37 +58,36 @@ const AboutUs = () => {
     >
       <div
         ref={pinRef}
-        className="about-us__pin relative flex w-full min-h-screen max-md:h-auto! max-md:min-h-0!"
+        className="about-us__pin relative w-full min-h-screen max-md:h-auto! max-md:min-h-0!"
         style={{
           height: '100dvh',
           minHeight: '100dvh',
           boxSizing: 'border-box',
-          padding: 'clamp(32px, 5vh, 64px) clamp(24px, 6vw, 96px)',
         }}
       >
+        <AboutUsPuzzleBackground motionRef={aboutPuzzleMotionRef} />
         <div
-          className="about-us__inner"
+          className="about-us__inner max-md:flex max-md:flex-col max-md:gap-10 max-md:px-6 max-md:py-12"
           style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'stretch',
-            justifyContent: 'space-between',
-            gap: 'clamp(40px, 5vw, 96px)',
+            position: 'relative',
+            zIndex: 1,
             width: '100%',
             maxWidth: '1320px',
+            height: '100%',
+            minHeight: 'inherit',
             margin: '0 auto',
-            flex: 1,
-            minHeight: 0,
           }}
         >
           <div
-            className="about-us__graphics max-md:mx-auto"
+            className="about-us__graphics max-md:relative! max-md:mx-auto max-md:translate-none!"
             style={{
-              position: 'relative',
-              flex: '0 0 auto',
+              position: 'absolute',
+              left: SIDE_INSET,
+              top: '50%',
+              transform: 'translateY(-50%)',
               width: 'clamp(260px, 36vw, 440px)',
               height: 'clamp(260px, 42vh, 440px)',
-              alignSelf: 'center',
+              zIndex: 2,
             }}
           >
             <img
@@ -107,8 +112,8 @@ const AboutUs = () => {
               className="about-us__stars"
               style={{
                 position: 'absolute',
-                top: '-6%',
-                right: '-10%',
+                top: '-28%',
+                right: '-14%',
                 display: 'block',
                 width: 'clamp(100px, 13vw, 170px)',
                 height: 'auto',
@@ -122,8 +127,8 @@ const AboutUs = () => {
               className="about-us__electric"
               style={{
                 position: 'absolute',
-                bottom: '12%',
-                left: '8%',
+                bottom: '6%',
+                left: '12%',
                 display: 'block',
                 width: 'clamp(72px, 9vw, 120px)',
                 height: 'auto',
@@ -149,20 +154,24 @@ const AboutUs = () => {
 
           <div
             ref={copyViewportRef}
-            className="about-us__copy-viewport max-md:h-auto! max-md:min-h-0! max-md:overflow-visible!"
+            className="about-us__copy-viewport max-md:relative! max-md:inset-auto! max-md:h-auto! max-md:w-full! max-md:overflow-visible! max-md:px-0"
             style={{
-              flex: '1 1 300px',
-              maxWidth: 'min(100%, 580px)',
-              minHeight: 0,
-              height: '100%',
+              position: 'absolute',
+              top: 0,
+              right: SIDE_INSET,
+              width: 'min(580px, calc(52vw - 48px))',
+              height: '100dvh',
               overflow: 'hidden',
-              position: 'relative',
+              zIndex: 1,
             }}
           >
             <div
               ref={copyTrackRef}
               className="about-us__copy-track"
-              style={{ willChange: 'transform' }}
+              style={{
+                willChange: 'transform',
+                transform: 'translateZ(0)',
+              }}
             >
               {ABOUT_CHAPTERS.map(({ id, heading, body }) => (
                 <article
@@ -170,11 +179,11 @@ const AboutUs = () => {
                   className="about-us__chapter max-md:min-h-0!"
                   data-about-chapter={id}
                   style={{
-                    minHeight: '100vh',
+                    minHeight: '100dvh',
                     display: 'flex',
                     alignItems: 'center',
                     boxSizing: 'border-box',
-                    padding: 'clamp(24px, 4vh, 48px) 0',
+                    backfaceVisibility: 'hidden',
                   }}
                 >
                   <div className="about-us__chapter-inner">

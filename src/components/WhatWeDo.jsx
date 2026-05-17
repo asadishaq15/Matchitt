@@ -131,8 +131,9 @@ const WhatWeDo = () => {
 
   const rowShiftX = 'clamp(24px, 3vw, 47px)';
   const clusterShiftX = 'clamp(-38px, -4.7vw, -66px)';
-  const rowShiftY = 'clamp(-18px, -2.2vw, -32px)';
-  const stagePadTop = 'clamp(40px, 5vw, 64px)';
+  const clusterShiftY = 'clamp(-28px, -3.2vh, -44px)';
+  const rowShiftY = 'clamp(-20px, -2.4vw, -34px)';
+  const stagePadTop = 'clamp(34px, 4.2vw, 58px)';
   const stepX = 'clamp(111px, 14.4vw, 250px)';
   const stepY = 'clamp(26px, 3.1vw, 47px)';
   const rowGap = 'clamp(160px, 17.7vw, 260px)';
@@ -140,7 +141,7 @@ const WhatWeDo = () => {
   const row2StartY = `calc(2.5 * ${stepY} + ${rowGap})`;
 
   const stageWidth = 'clamp(680px, 88vw, 1520px)';
-  const stageHeight = `calc(${stagePadTop} + 6 * ${stepY} + ${rowGap} + clamp(175px, 21vw, 368px))`;
+  const stageHeight = `calc(${stagePadTop} + 6 * ${stepY} + ${rowGap} + clamp(200px, 23vw, 400px))`;
 
   useWhatWeDoFolderScroll({ sectionRef, pinRef, cardRefs, headerRef });
 
@@ -158,8 +159,8 @@ const WhatWeDo = () => {
       left: `calc(${baseX} + ${rowShiftX} + ${clusterShiftX} + ${folderOffsetX} + ${folderTweakX} + ${index} * ${stepX})`,
       top:
         index === 0
-          ? `calc(${stagePadTop} + ${baseY} + ${rowShiftY})`
-          : `calc(${stagePadTop} + ${baseY} + ${rowShiftY} + ${index} * ${stepY})`,
+          ? `calc(${stagePadTop} + ${baseY} + ${rowShiftY} + ${clusterShiftY})`
+          : `calc(${stagePadTop} + ${baseY} + ${rowShiftY} + ${clusterShiftY} + ${index} * ${stepY})`,
       zIndex: rowIndex === 0 ? index + 1 : TOP_ROW.length + index + 1,
     };
   };
@@ -230,7 +231,7 @@ const WhatWeDo = () => {
           justifyContent: 'center',
           overflow: 'visible',
           paddingTop: '8px',
-          paddingBottom: '12px',
+          paddingBottom: 'clamp(32px, 4vh, 56px)',
           WebkitOverflowScrolling: 'touch',
         }}
       >
