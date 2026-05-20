@@ -3,12 +3,17 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
   FINAL_MOTION_RIGHT,
-  HERO_PUZZLE_MOTION,
-  JOIN_ANIM_DURATION,
+  JOIN_HOLD_END,
   JOIN_MODEL_SCALE_SEPARATED,
+  JOIN_PHASE_END,
+  JOIN_ROTATION_HOLD,
+  JOIN_ROTATION_JOINED,
   JOIN_SCRUB,
+  JOIN_SPIN_BLEND_END,
+  JOIN_SPIN_RADIANS,
   JOIN_SCROLL_VH,
   JOIN_STAGE_ABOVE_CARDS,
+  JOIN_STAGE_CENTERED,
   JOIN_STAGE_JOINED,
   JOIN_STAGE_SEPARATED,
   MATCH_STEPS_CAROUSEL_END,
@@ -18,6 +23,7 @@ import {
   MATCH_STEPS_REVEAL_START,
   PUZZLE_Z_DEFAULT,
   PUZZLE_Z_JOIN,
+  SEPARATE_PHASE_END,
   TILT_PHASE_START,
 } from '../constants/puzzleJoin';
 import { setCarouselScrubPhase, setDrivenByScroll } from '../lib/matchStepsCarouselDrive';
@@ -32,6 +38,11 @@ import {
   forceUnlockMatchStepsViewport,
   updateMatchStepsViewportLock,
 } from '../lib/matchStepsViewportLock';
+import {
+  applyHeroStage,
+  hidePuzzleAboveJoin,
+  isHeroControllingPuzzle,
+} from '../lib/puzzleHeroStage';
 import { onScrollReady, SCROLL_ROOT } from '../lib/scrollEngine';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -73,9 +84,20 @@ const applyJoinStagePose = (stage, joinProgress, pinProgress = 0) => {
   }
 
   gsap.set(stage, {
-    ...JOIN_STAGE_SEPARATED,
+    ...JOIN_STAGE_CENTERED,
+    x: JOIN_STAGE_CENTERED.x,
     y: `${yVh}vh`,
+    rotate: 0,
     scale,
+  });
+};
+
+/** Force centered stage when join pin takes over (clears hero x/rotate). */
+const applyJoinStageCentered = (stage) => {
+  if (!stage) return;
+  gsap.set(stage, {
+    ...JOIN_STAGE_CENTERED,
+    opacity: 1,
   });
 };
 
@@ -198,9 +220,84 @@ const applyMatchStepsCarousel = (progress) => {
   }
 };
 
+const lerpRotation = (from, to, t) => ({
+  rotationX: gsap.utils.interpolate(from.rotationX, to.rotationX, t),
+  rotationY: gsap.utils.interpolate(from.rotationY, to.rotationY, t),
+  rotationZ: gsap.utils.interpolate(from.rotationZ, to.rotationZ, t),
+});
+
+const assignRotation = (scrollMotion, rotation) => {
+  scrollMotion.rotationX = rotation.rotationX;
+  scrollMotion.rotationY = rotation.rotationY;
+  scrollMotion.rotationZ = rotation.rotationZ;
+};
+
+const applyJoinPhaseRotation = (scrollMotion, progress) => {
+  const tiltEnd = {
+    rotationX: 0,
+    rotationY: FINAL_MOTION_RIGHT.rotationY,
+    rotationZ: FINAL_MOTION_RIGHT.rotationZ,
+  };
+
+  if (progress <= JOIN_HOLD_END) {
+    assignRotation(scrollMotion, JOIN_ROTATION_HOLD);
+    return;
+  }
+
+  if (progress <= JOIN_PHASE_END) {
+    const joinSpinT = gsap.utils.mapRange(JOIN_HOLD_END, JOIN_PHASE_END, 0, 1, progress);
+    const joinSpinY = JOIN_SPIN_RADIANS * joinSpinT;
+    const blendT = gsap.utils.clamp(0, 1, joinSpinT / JOIN_SPIN_BLEND_END);
+    const rotationY = gsap.utils.interpolate(JOIN_ROTATION_HOLD.rotationY, joinSpinY, blendT);
+    const rotationX =
+      joinSpinT < 0.5
+        ? 0.08 * (joinSpinT / 0.5)
+        : gsap.utils.interpolate(0.08, 0, (joinSpinT - 0.5) / 0.5);
+
+    assignRotation(scrollMotion, {
+      rotationX,
+      rotationY,
+      rotationZ: 0,
+    });
+    return;
+  }
+
+  if (progress <= TILT_PHASE_START) {
+    assignRotation(scrollMotion, JOIN_ROTATION_JOINED);
+    return;
+  }
+
+  const tiltT = gsap.utils.mapRange(TILT_PHASE_START, 1, 0, 1, progress);
+  assignRotation(scrollMotion, lerpRotation(JOIN_ROTATION_JOINED, tiltEnd, tiltT));
+};
+
 const applyPuzzleMotion = (scrollMotion, progress) => {
-  if (progress <= JOIN_ANIM_DURATION) {
-    scrollMotion.joinProgress = gsap.utils.mapRange(0, JOIN_ANIM_DURATION, 0, 1, progress);
+  if (progress <= JOIN_HOLD_END) {
+    scrollMotion.joinProgress = 1;
+    scrollMotion.separatedCorners = false;
+    scrollMotion.modelScale = 1;
+  } else if (progress <= SEPARATE_PHASE_END) {
+    scrollMotion.joinProgress = gsap.utils.mapRange(
+      JOIN_HOLD_END,
+      SEPARATE_PHASE_END,
+      1,
+      0,
+      progress,
+    );
+    scrollMotion.separatedCorners = scrollMotion.joinProgress < CORNERS_JOINED_THRESHOLD;
+    scrollMotion.modelScale = gsap.utils.interpolate(
+      1,
+      JOIN_MODEL_SCALE_SEPARATED,
+      1 - scrollMotion.joinProgress,
+    );
+  } else if (progress <= JOIN_PHASE_END) {
+    scrollMotion.joinProgress = gsap.utils.mapRange(
+      SEPARATE_PHASE_END,
+      JOIN_PHASE_END,
+      0,
+      1,
+      progress,
+    );
     scrollMotion.separatedCorners = scrollMotion.joinProgress < CORNERS_JOINED_THRESHOLD;
     scrollMotion.modelScale = gsap.utils.interpolate(
       JOIN_MODEL_SCALE_SEPARATED,
@@ -213,15 +310,7 @@ const applyPuzzleMotion = (scrollMotion, progress) => {
     scrollMotion.modelScale = 1;
   }
 
-  if (progress <= TILT_PHASE_START) {
-    scrollMotion.rotationY = 0;
-    scrollMotion.rotationZ = 0;
-    return;
-  }
-
-  const tiltT = gsap.utils.mapRange(TILT_PHASE_START, 1, 0, 1, progress);
-  scrollMotion.rotationY = tiltT * FINAL_MOTION_RIGHT.rotationY;
-  scrollMotion.rotationZ = tiltT * FINAL_MOTION_RIGHT.rotationZ;
+  applyJoinPhaseRotation(scrollMotion, progress);
 };
 
 /**
@@ -247,17 +336,16 @@ const applyJoinPinState = ({ scrollMotion, stage, overlay, progress, pinActive }
   applyMatchStepsCarousel(t);
 };
 
-const applyHeroPuzzleMotion = (scrollMotion) => {
-  Object.assign(scrollMotion, HERO_PUZZLE_MOTION);
-};
-
-const hideAboveJoin = (stage, overlay, scrollMotion) => {
-  gsap.set(stage, { opacity: 0 });
-  applyHeroPuzzleMotion(scrollMotion);
+const releaseToHeroOrHide = (stage, overlay, scrollMotion) => {
   hideMatchSteps();
-  if (overlay) {
-    overlay.style.zIndex = String(PUZZLE_Z_DEFAULT);
+  if (isHeroControllingPuzzle()) {
+    applyHeroStage(stage, scrollMotion, { visible: true });
+    if (overlay) {
+      overlay.style.zIndex = String(PUZZLE_Z_DEFAULT);
+    }
+    return;
   }
+  hidePuzzleAboveJoin(stage, overlay, scrollMotion);
 };
 
 const hidePuzzleOverlay = (stage, overlay) => {
@@ -357,9 +445,11 @@ export const usePuzzleJoinScroll = ({ scrollMotionRef, stageRef, overlayRef }) =
           anticipatePin: 0,
           fastScrollEnd: false,
           onEnter() {
+            applyJoinStageCentered(stage);
             runPinState(0, true);
           },
           onEnterBack(self) {
+            applyJoinStageCentered(stage);
             runPinState(self.progress, true);
           },
           onUpdate(self) {
@@ -367,7 +457,7 @@ export const usePuzzleJoinScroll = ({ scrollMotionRef, stageRef, overlayRef }) =
 
             if (!self.isActive) {
               if (progress <= 0) {
-                hideAboveJoin(stage, overlay, scrollMotion);
+                releaseToHeroOrHide(stage, overlay, scrollMotion);
               } else if (progress >= 1) {
                 hideMatchSteps();
                 hidePuzzleOverlay(stage, overlay);
@@ -384,7 +474,7 @@ export const usePuzzleJoinScroll = ({ scrollMotionRef, stageRef, overlayRef }) =
             hidePuzzleOverlay(stage, overlay);
           },
           onLeaveBack() {
-            hideAboveJoin(stage, overlay, scrollMotion);
+            releaseToHeroOrHide(stage, overlay, scrollMotion);
           },
         });
 

@@ -13,14 +13,20 @@ const scrollTriggerBase = {
 const DESKTOP_MQ = '(min-width: 769px) and (prefers-reduced-motion: no-preference)';
 const FALLBACK_MQ = '(max-width: 768px), (prefers-reduced-motion: reduce)';
 
-const SCROLL_VH_PER_CARD = 0.4;
-const CARD_STAGGER = 1.65;
-const CARD_ENTER_DURATION = 1.7;
-const SCRUB_SMOOTHNESS = 1.75;
+const SCROLL_VH_PER_CARD = 2.5;
+const CARD_STAGGER = 5;
+const CARD_ENTER_DURATION = 5;
+const SCRUB_SMOOTHNESS = 1;
 /** Diagonal entry offset (bottom-right → resting position). */
 const ENTER_X = 100;
 const ENTER_Y = 72;
-const END_HOLD_DURATION = 0.55;
+const END_HOLD_DURATION = 2.4;
+
+const getTimelineSpan = (cardCount) =>
+  (cardCount - 1) * CARD_STAGGER + CARD_ENTER_DURATION + END_HOLD_DURATION;
+
+const scrollDistance = (cardCount) =>
+  window.innerHeight * SCROLL_VH_PER_CARD * cardCount;
 
 const waitForImages = (container) => {
   const images = container.querySelectorAll('img');
@@ -61,9 +67,6 @@ export const useWhatWeDoFolderScroll = ({
 
         if (!section || !pin || cards.length === 0) return;
 
-        const scrollDistance = () =>
-          window.innerHeight * SCROLL_VH_PER_CARD * cards.length;
-
         mm = gsap.matchMedia();
 
         mm.add(FALLBACK_MQ, () => {
@@ -100,7 +103,7 @@ export const useWhatWeDoFolderScroll = ({
               ...scrollTriggerBase,
               trigger: pin,
               start: 'top top',
-              end: () => `+=${scrollDistance()}`,
+              end: () => `+=${scrollDistance(cards.length)}`,
               pin: true,
               pinSpacing: true,
               scrub: SCRUB_SMOOTHNESS,

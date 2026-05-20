@@ -5,9 +5,9 @@ import PuzzleScene from '../scenes/PuzzleScene';
 import { usePuzzleJoinScroll } from '../hooks/usePuzzleJoinScroll';
 import {
   HERO_PUZZLE_MOTION,
-  HERO_STAGE_INITIAL,
   HERO_STAGE_SCALE,
 } from '../constants/puzzleJoin';
+import { applyHeroStage } from '../lib/puzzleHeroStage';
 import { onScrollReady, SCROLL_ROOT } from '../lib/scrollEngine';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -35,18 +35,11 @@ const ScrollingPuzzle = () => {
       ctx = gsap.context(() => {
         const scrollMotion = scrollMotionRef.current;
 
-        gsap.set(stage, {
-          xPercent: -50,
-          yPercent: -50,
-          opacity: 1,
-          ...HERO_STAGE_INITIAL,
-        });
-
-        gsap.set(scrollMotion, HERO_PUZZLE_MOTION);
+        applyHeroStage(stage, scrollMotion, { visible: true });
 
         const heroEl = document.getElementById('hero');
-        const applyHeroJoinedState = () => {
-          Object.assign(scrollMotion, HERO_PUZZLE_MOTION);
+        const restoreHeroOwnership = () => {
+          applyHeroStage(stage, scrollMotion, { visible: true });
         };
 
         const scrollTriggerConfig = {
@@ -56,8 +49,8 @@ const ScrollingPuzzle = () => {
           end: heroEl ? 'bottom bottom' : 'bottom bottom',
           scrub: 0.35,
           invalidateOnRefresh: true,
-          onEnter: applyHeroJoinedState,
-          onEnterBack: applyHeroJoinedState,
+          onEnter: restoreHeroOwnership,
+          onEnterBack: restoreHeroOwnership,
         };
 
         const timeline = gsap.timeline({
@@ -146,6 +139,7 @@ const ScrollingPuzzle = () => {
         inset: 0,
         zIndex: 18,
         pointerEvents: 'none',
+        overflow: 'visible',
       }}
     >
       <div
@@ -156,6 +150,7 @@ const ScrollingPuzzle = () => {
           top: '50%',
           width: '100vw',
           height: '100vh',
+          overflow: 'visible',
           opacity: 0,
           pointerEvents: 'none',
           touchAction: 'none',

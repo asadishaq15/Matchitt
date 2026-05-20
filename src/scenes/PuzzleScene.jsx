@@ -9,6 +9,7 @@ import {
   SEPARATED_ALIGN_Z,
   CAMERA_FOV_JOINED,
   CAMERA_FOV_SEPARATED,
+  CAMERA_SEPARATED_PADDING,
   CAMERA_Z_JOINED,
   CAMERA_Z_SEPARATED,
   SEPARATED_GROUP_ROTATION,
@@ -19,6 +20,8 @@ import {
 } from '../constants/puzzleJoin';
 
 const MODEL_TARGET_SIZE = 4.6;
+/** Slightly larger normalize target for scroll-driven join / hero puzzle. */
+const MODEL_TARGET_SIZE_SCROLL = 5.15;
 const MODEL_BASE_ROTATION = [-0.50, -2.95, -0.44];
 const MATERIAL_COLOR_BOOST = 1.08;
 
@@ -45,7 +48,12 @@ const capturePiece = (object) => ({
   restRotation: object.rotation.clone(),
 });
 
-const PuzzleObject = ({ modelScale = 1, rotationOffset = [0, 0, 0], scrollMotionRef }) => {
+const PuzzleObject = ({
+  modelScale = 1,
+  rotationOffset = [0, 0, 0],
+  scrollMotionRef,
+  modelTargetSize = MODEL_TARGET_SIZE,
+}) => {
   const groupRef = useRef();
   const normalizedModelRef = useRef();
   const { scene } = useGLTF('/puzzleModel.glb');
@@ -97,7 +105,7 @@ const PuzzleObject = ({ modelScale = 1, rotationOffset = [0, 0, 0], scrollMotion
     box.getSize(size);
 
     const maxAxis = Math.max(size.x, size.y, size.z) || 1;
-    const scale = MODEL_TARGET_SIZE / maxAxis;
+    const scale = modelTargetSize / maxAxis;
 
     const { left: leftObject, right: rightObject } = findPuzzlePieces(clonedScene);
 
@@ -117,7 +125,7 @@ const PuzzleObject = ({ modelScale = 1, rotationOffset = [0, 0, 0], scrollMotion
         separationX,
       },
     };
-  }, [scene]);
+  }, [scene, modelTargetSize]);
 
   useFrame(() => {
     const scrollMotion = scrollMotionRef?.current;
@@ -204,11 +212,21 @@ const FitSeparatedCamera = ({ scrollMotionRef }) => {
   useFrame(() => {
     if (!(camera instanceof THREE.PerspectiveCamera)) return;
 
-    const joinProgress = scrollMotionRef?.current?.joinProgress ?? 1;
+    const scrollMotion = scrollMotionRef?.current;
+    const joinProgress = scrollMotion?.joinProgress ?? 1;
     const spreadT = 1 - joinProgress;
+    const modelScale = scrollMotion?.modelScale ?? 1;
 
-    camera.position.z = THREE.MathUtils.lerp(CAMERA_Z_JOINED, CAMERA_Z_SEPARATED, spreadT);
-    camera.fov = THREE.MathUtils.lerp(CAMERA_FOV_JOINED, CAMERA_FOV_SEPARATED, spreadT);
+    let z = THREE.MathUtils.lerp(CAMERA_Z_JOINED, CAMERA_Z_SEPARATED, spreadT);
+    let fov = THREE.MathUtils.lerp(CAMERA_FOV_JOINED, CAMERA_FOV_SEPARATED, spreadT);
+
+    if (spreadT > 0) {
+      const padding = 1 + CAMERA_SEPARATED_PADDING * spreadT;
+      z *= padding;
+    }
+
+    camera.position.set(0, 0, z);
+    camera.fov = fov;
     camera.updateProjectionMatrix();
   });
 
@@ -233,6 +251,7 @@ const PuzzleScene = ({
         modelScale={modelScale}
         rotationOffset={rotationOffset}
         scrollMotionRef={scrollMotionRef}
+        modelTargetSize={scrollMotionRef ? MODEL_TARGET_SIZE_SCROLL : MODEL_TARGET_SIZE}
       />
     </Suspense>
   );
@@ -242,7 +261,7 @@ const PuzzleScene = ({
       <Canvas
         dpr={[1, 1.5]}
         gl={{ alpha: true, antialias: true }}
-        style={{ touchAction: 'none' }}
+        style={{ width: '100%', height: '100%', display: 'block', touchAction: 'none' }}
         onCreated={({ gl, events }) => {
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
